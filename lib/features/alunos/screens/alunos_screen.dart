@@ -28,6 +28,7 @@ class _AlunosScreenState extends State<AlunosScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Alunos')),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_alunos',
         onPressed: () => Navigator.of(context).push(
           MaterialPageRoute(builder: (_) => const AlunoFormScreen()),
         ),

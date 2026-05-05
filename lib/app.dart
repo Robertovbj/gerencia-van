@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'features/escolas/providers/escola_provider.dart';
 import 'features/alunos/providers/aluno_provider.dart';
@@ -26,8 +27,16 @@ class GerenciaVanApp extends StatelessWidget {
             brightness: Brightness.light,
           ),
         ),
-        home: const MainScaffold(),
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        supportedLocales: const [
+          Locale('pt', 'BR'),
+        ],
         locale: const Locale('pt', 'BR'),
+        home: const MainScaffold(),
       ),
     );
   }
