@@ -5,6 +5,7 @@ import '../widgets/aluno_list_item.dart';
 import 'aluno_form_screen.dart';
 import 'aluno_detail_screen.dart';
 import '../../escolas/providers/escola_provider.dart';
+import '../../../shared/widgets/main_scaffold_key.dart';
 
 class AlunosScreen extends StatefulWidget {
   const AlunosScreen({super.key});
@@ -26,7 +27,13 @@ class _AlunosScreenState extends State<AlunosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Alunos')),
+      appBar: AppBar(
+        title: const Text('Alunos'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => MainScaffoldKey.of(context)?.currentState?.openDrawer(),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         heroTag: 'fab_alunos',
         onPressed: () => Navigator.of(context).push(

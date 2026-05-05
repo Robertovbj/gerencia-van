@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/escola.dart';
 import '../providers/escola_provider.dart';
 import '../widgets/escola_list_item.dart';
+import '../../../shared/widgets/main_scaffold_key.dart';
 
 class EscolasScreen extends StatefulWidget {
   const EscolasScreen({super.key});
@@ -90,6 +91,7 @@ class _EscolasScreenState extends State<EscolasScreen> {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Colors.white,
             ),
             onPressed: () => Navigator.of(ctx).pop(true),
             child: const Text('Excluir'),
@@ -116,7 +118,13 @@ class _EscolasScreenState extends State<EscolasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Escolas')),
+      appBar: AppBar(
+        title: const Text('Escolas'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => MainScaffoldKey.of(context)?.currentState?.openDrawer(),
+        ),
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _abrirFormulario(context),
         child: const Icon(Icons.add),

@@ -5,6 +5,7 @@ import '../widgets/pagamento_list_item.dart';
 import '../widgets/pagamento_bottom_sheet.dart';
 import '../../escolas/providers/escola_provider.dart';
 import '../../../core/utils/formatters.dart';
+import '../../../shared/widgets/main_scaffold_key.dart';
 
 class PagamentosScreen extends StatefulWidget {
   const PagamentosScreen({super.key});
@@ -84,7 +85,13 @@ class _PagamentosScreenState extends State<PagamentosScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Pagamentos')),
+      appBar: AppBar(
+        title: const Text('Pagamentos'),
+        leading: IconButton(
+          icon: const Icon(Icons.menu),
+          onPressed: () => MainScaffoldKey.of(context)?.currentState?.openDrawer(),
+        ),
+      ),
       body: Column(
         children: [
           _buildFiltros(context),
