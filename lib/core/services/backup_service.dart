@@ -9,27 +9,61 @@ class BackupService {
   static final BackupService instance = BackupService._();
   BackupService._();
 
-  /// Exporta todas as tabelas em um único JSON e abre o seletor de compartilhamento.
-  Future<void> exportar() async {
+  /// Lê todas as tabelas e retorna o mapa de backup.
+  /// [asOf] é o timestamp que será gravado em 'exportadoEm';
+  /// se omitido, usa DateTime.now().
+  Future<Map<String, dynamic>> buildBackupData({DateTime? asOf}) async {
     final db = await DatabaseHelper.instance.database;
-
     final escolas = await db.query('escolas');
     final alunos = await db.query('alunos');
     final contratos = await db.query('contratos');
     final pagamentos = await db.query('pagamentos');
 
-    final data = jsonEncode({
+    return {
       'versao': 1,
-      'exportadoEm': DateTime.now().toIso8601String(),
+      'exportadoEm': (asOf ?? DateTime.now()).toIso8601String(),
       'escolas': escolas,
       'alunos': alunos,
       'contratos': contratos,
       'pagamentos': pagamentos,
+    };
+  }
+
+  /// Aplica os dados do mapa ao banco.
+  /// Retorna null em caso de sucesso ou uma mensagem de erro.
+  Future<String?> importarDados(Map<String, dynamic> data) async {
+    if (data['versao'] != 1) return 'Versão de backup incompatível.';
+
+    final db = await DatabaseHelper.instance.database;
+    await db.transaction((txn) async {
+      await txn.delete('pagamentos');
+      await txn.delete('contratos');
+      await txn.delete('alunos');
+      await txn.delete('escolas');
+
+      for (final row in (data['escolas'] as List)) {
+        await txn.insert('escolas', Map<String, dynamic>.from(row as Map));
+      }
+      for (final row in (data['alunos'] as List)) {
+        await txn.insert('alunos', Map<String, dynamic>.from(row as Map));
+      }
+      for (final row in (data['contratos'] as List)) {
+        await txn.insert('contratos', Map<String, dynamic>.from(row as Map));
+      }
+      for (final row in (data['pagamentos'] as List)) {
+        await txn.insert('pagamentos', Map<String, dynamic>.from(row as Map));
+      }
     });
 
+    return null;
+  }
+
+  /// Exporta todas as tabelas em um único JSON e abre o seletor de compartilhamento.
+  Future<void> exportar() async {
+    final data = await buildBackupData();
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/gerencia_van_backup.json');
-    await file.writeAsString(data);
+    await file.writeAsString(jsonEncode(data));
 
     await Share.shareXFiles(
       [XFile(file.path)],
@@ -57,33 +91,6 @@ class BackupService {
       return 'Arquivo JSON inválido.';
     }
 
-    if (data['versao'] != 1) {
-      return 'Versão de backup incompatível.';
-    }
-
-    final db = await DatabaseHelper.instance.database;
-
-    await db.transaction((txn) async {
-      // Limpa na ordem inversa das FK
-      await txn.delete('pagamentos');
-      await txn.delete('contratos');
-      await txn.delete('alunos');
-      await txn.delete('escolas');
-
-      for (final row in (data['escolas'] as List)) {
-        await txn.insert('escolas', Map<String, dynamic>.from(row as Map));
-      }
-      for (final row in (data['alunos'] as List)) {
-        await txn.insert('alunos', Map<String, dynamic>.from(row as Map));
-      }
-      for (final row in (data['contratos'] as List)) {
-        await txn.insert('contratos', Map<String, dynamic>.from(row as Map));
-      }
-      for (final row in (data['pagamentos'] as List)) {
-        await txn.insert('pagamentos', Map<String, dynamic>.from(row as Map));
-      }
-    });
-
-    return null;
+    return importarDados(data);
   }
 }
