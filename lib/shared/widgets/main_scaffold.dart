@@ -135,6 +135,14 @@ class _MainScaffoldState extends State<MainScaffold> {
                 title: const Text('Importar dados (JSON)'),
                 onTap: _importar,
               ),
+              const Spacer(),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Text(
+                  'Desenvolvido por Roberto Barbosa',
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ),
             ],
           ),
         ),
