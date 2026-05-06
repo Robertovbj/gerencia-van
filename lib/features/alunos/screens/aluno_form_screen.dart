@@ -4,6 +4,7 @@ import '../models/aluno.dart';
 import '../models/contrato.dart';
 import '../providers/aluno_provider.dart';
 import '../../escolas/providers/escola_provider.dart';
+import '../../pagamentos/providers/pagamento_provider.dart';
 import '../../../core/utils/formatters.dart';
 
 class AlunoFormScreen extends StatefulWidget {
@@ -29,7 +30,7 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
   int _diaPagamento = 1;
   bool _ativo = true;
 
-  DateTime _dataInicio = DateTime(DateTime.now().year, 1, 1);
+  DateTime _dataInicio = DateTime.now();
   DateTime _dataFim = DateTime(DateTime.now().year, 12, 31);
 
   bool _salvando = false;
@@ -49,7 +50,7 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     _horario = a?.horario ?? 'manha';
     _diaPagamento = a?.diaPagamento ?? 1;
     _ativo = a?.ativo ?? true;
-    _dataInicio = c?.dataInicio ?? DateTime(DateTime.now().year, 1, 1);
+    _dataInicio = c?.dataInicio ?? DateTime.now();
     _dataFim = c?.dataFim ?? DateTime(DateTime.now().year, 12, 31);
   }
 
@@ -121,6 +122,7 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     );
 
     await context.read<AlunoProvider>().salvar(aluno: aluno, contrato: contrato);
+    if (mounted) context.read<PagamentoProvider>().carregar();
 
     if (mounted) Navigator.of(context).pop();
   }

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../core/services/backup_service.dart';
 import 'main_scaffold_key.dart';
 import '../../features/escolas/screens/escolas_screen.dart';
+import '../../features/escolas/providers/escola_provider.dart';
 import '../../features/alunos/screens/alunos_screen.dart';
+import '../../features/alunos/providers/aluno_provider.dart';
 import '../../features/pagamentos/screens/pagamentos_screen.dart';
+import '../../features/pagamentos/providers/pagamento_provider.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -62,6 +66,13 @@ class _MainScaffoldState extends State<MainScaffold> {
     try {
       final erro = await BackupService.instance.importar();
       if (mounted) {
+        if (erro == null) {
+          await Future.wait([
+            context.read<EscolaProvider>().carregar(),
+            context.read<AlunoProvider>().carregar(),
+            context.read<PagamentoProvider>().carregar(),
+          ]);
+        }
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(erro ?? 'Dados importados com sucesso!'),
