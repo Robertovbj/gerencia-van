@@ -5,6 +5,7 @@ import 'main_scaffold_key.dart';
 import '../../features/escolas/screens/escolas_screen.dart';
 import '../../features/escolas/providers/escola_provider.dart';
 import '../../features/alunos/screens/alunos_screen.dart';
+import '../../features/alunos/screens/renovacao_screen.dart';
 import '../../features/alunos/providers/aluno_provider.dart';
 import '../../features/pagamentos/screens/pagamentos_screen.dart';
 import '../../features/pagamentos/providers/pagamento_provider.dart';
@@ -113,6 +114,17 @@ class _MainScaffoldState extends State<MainScaffold> {
                   ],
                 ),
               ),
+              ListTile(
+                leading: const Icon(Icons.autorenew),
+                title: const Text('Renovar contratos'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const RenovacaoScreen()),
+                  );
+                },
+              ),
+              const Divider(),
               ListTile(
                 leading: const Icon(Icons.upload_file),
                 title: const Text('Exportar dados (JSON)'),

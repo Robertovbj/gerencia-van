@@ -152,6 +152,42 @@ class _AlunoDetailScreenState extends State<AlunoDetailScreen> {
                   child: ListTile(
                     leading: const Icon(Icons.description),
                     title: Text('${formatarData(c.dataInicio)} → ${formatarData(c.dataFim)}'),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      tooltip: 'Excluir contrato',
+                      onPressed: () async {
+                        final confirmar = await showDialog<bool>(
+                          context: context,
+                          builder: (ctx) => AlertDialog(
+                            title: const Text('Excluir contrato'),
+                            content: const Text(
+                              'Se houver pagamentos já realizados, o contrato será encurtado '
+                              'até o último mês pago e os demais pagamentos serão removidos.\n\n'
+                              'Se não houver nenhum pagamento realizado, o contrato será excluído completamente.\n\n'
+                              'Deseja continuar?',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(ctx).pop(false),
+                                child: const Text('Cancelar'),
+                              ),
+                              ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Theme.of(ctx).colorScheme.error,
+                                  foregroundColor: Colors.white,
+                                ),
+                                onPressed: () => Navigator.of(ctx).pop(true),
+                                child: const Text('Excluir'),
+                              ),
+                            ],
+                          ),
+                        );
+                        if (confirmar == true) {
+                          await context.read<AlunoProvider>().excluirContrato(c.id!);
+                          await _carregarContratos();
+                        }
+                      },
+                    ),
                   ),
                 )),
         ],
