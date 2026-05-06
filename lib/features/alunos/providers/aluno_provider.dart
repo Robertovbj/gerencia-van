@@ -3,6 +3,7 @@ import '../models/aluno.dart';
 import '../models/contrato.dart';
 import '../repositories/aluno_repository.dart';
 import '../repositories/contrato_repository.dart';
+import '../../../core/services/sync_service.dart';
 import '../../pagamentos/repositories/pagamento_repository.dart';
 
 class AlunoProvider extends ChangeNotifier {
@@ -63,6 +64,7 @@ class AlunoProvider extends ChangeNotifier {
     );
 
     await carregar();
+    SyncService.instance.scheduleSync();
   }
 
   Future<List<Contrato>> listarContratos(int alunoId) async {
@@ -84,11 +86,13 @@ class AlunoProvider extends ChangeNotifier {
       valorMensalidade: valorMensalidade,
     );
     await carregar();
+    SyncService.instance.scheduleSync();
   }
 
   Future<void> excluirContrato(int contratoId) async {
     await _contratoRepo.excluir(contratoId);
     await carregar();
+    SyncService.instance.scheduleSync();
   }
 
   /// Para cada aluno em [alunoIds], adiciona um contrato de [dataInicio] a [dataFim].
@@ -141,5 +145,6 @@ class AlunoProvider extends ChangeNotifier {
       }
     }
     await carregar();
+    SyncService.instance.scheduleSync();
   }
 }

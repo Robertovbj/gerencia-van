@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/pagamento.dart';
 import '../repositories/pagamento_repository.dart';
+import '../../../core/services/sync_service.dart';
 
 class PagamentoProvider extends ChangeNotifier {
   final _repo = PagamentoRepository();
@@ -74,11 +75,13 @@ class PagamentoProvider extends ChangeNotifier {
       dataPagamento: dataPagamento,
     );
     await carregar();
+    SyncService.instance.scheduleSync();
   }
 
   Future<void> desmarcarPagamento(int pagamentoId) async {
     await _repo.desmarcarPagamento(pagamentoId);
     await carregar();
+    SyncService.instance.scheduleSync();
   }
 
   int get totalPagos => _pagamentos.where((p) => p.pago).length;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/escola.dart';
 import '../repositories/escola_repository.dart';
+import '../../../core/services/sync_service.dart';
 
 class EscolaProvider extends ChangeNotifier {
   final _repo = EscolaRepository();
@@ -38,6 +39,7 @@ class EscolaProvider extends ChangeNotifier {
       await _repo.atualizar(escola);
     }
     await carregar();
+    SyncService.instance.scheduleSync();
   }
 
   Future<bool> excluir(Escola escola) async {
@@ -45,6 +47,7 @@ class EscolaProvider extends ChangeNotifier {
     if (temAlunos) return false;
     await _repo.excluir(escola.id!);
     await carregar();
+    SyncService.instance.scheduleSync();
     return true;
   }
 }

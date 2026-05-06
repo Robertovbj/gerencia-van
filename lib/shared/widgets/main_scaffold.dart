@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../core/services/backup_service.dart';
+import '../../core/services/sync_service.dart';
 import 'main_scaffold_key.dart';
 import '../../features/escolas/screens/escolas_screen.dart';
 import '../../features/escolas/providers/escola_provider.dart';
@@ -9,6 +9,7 @@ import '../../features/alunos/screens/renovacao_screen.dart';
 import '../../features/alunos/providers/aluno_provider.dart';
 import '../../features/pagamentos/screens/pagamentos_screen.dart';
 import '../../features/pagamentos/providers/pagamento_provider.dart';
+import '../../features/sincronia/screens/sincronia_screen.dart';
 
 class MainScaffold extends StatefulWidget {
   const MainScaffold({super.key});
@@ -27,66 +28,24 @@ class _MainScaffoldState extends State<MainScaffold> {
     PagamentosScreen(),
   ];
 
-  Future<void> _exportar() async {
-    Navigator.of(context).pop();
-    try {
-      await BackupService.instance.exportar();
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao exportar: $e')),
-        );
-      }
-    }
+  @override
+  void initState() {
+    super.initState();
+    SyncService.instance.onDataImported = () {
+      if (!mounted) return;
+      context.read<EscolaProvider>().carregar();
+      context.read<AlunoProvider>().carregar();
+      context.read<PagamentoProvider>().carregar();
+    };
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      SyncService.instance.init();
+    });
   }
 
-  Future<void> _importar() async {
-    Navigator.of(context).pop();
-    final confirmar = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Importar dados'),
-        content: const Text(
-          'Isso substituirá TODOS os dados atuais pelo conteúdo do arquivo. Deseja continuar?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Importar'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmar != true) return;
-
-    try {
-      final erro = await BackupService.instance.importar();
-      if (mounted) {
-        if (erro == null) {
-          await Future.wait([
-            context.read<EscolaProvider>().carregar(),
-            context.read<AlunoProvider>().carregar(),
-            context.read<PagamentoProvider>().carregar(),
-          ]);
-        }
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(erro ?? 'Dados importados com sucesso!'),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao importar: $e')),
-        );
-      }
-    }
+  @override
+  void dispose() {
+    SyncService.instance.onDataImported = null;
+    super.dispose();
   }
 
   @override
@@ -126,14 +85,14 @@ class _MainScaffoldState extends State<MainScaffold> {
               ),
               const Divider(),
               ListTile(
-                leading: const Icon(Icons.upload_file),
-                title: const Text('Exportar dados (JSON)'),
-                onTap: _exportar,
-              ),
-              ListTile(
-                leading: const Icon(Icons.download),
-                title: const Text('Importar dados (JSON)'),
-                onTap: _importar,
+                leading: const Icon(Icons.cloud_sync),
+                title: const Text('Importação e sincronia'),
+                onTap: () {
+                  Navigator.of(context).pop();
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SincroniaScreen()),
+                  );
+                },
               ),
               const Spacer(),
               const Padding(
