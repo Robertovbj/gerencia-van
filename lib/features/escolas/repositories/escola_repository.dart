@@ -7,7 +7,7 @@ class EscolaRepository {
 
   Future<List<Escola>> listarTodas() async {
     final db = await _db;
-    final maps = await db.query('escolas', orderBy: 'nome ASC');
+    final maps = await db.query('escolas', orderBy: 'ativo DESC, nome ASC');
     return maps.map(Escola.fromMap).toList();
   }
 

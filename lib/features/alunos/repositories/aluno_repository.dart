@@ -11,7 +11,7 @@ class AlunoRepository {
       SELECT a.*, e.nome as escola_nome
       FROM alunos a
       LEFT JOIN escolas e ON e.id = a.escola_id
-      ORDER BY a.nome ASC
+      ORDER BY a.ativo DESC, a.nome ASC
     ''');
     return maps.map(Aluno.fromMap).toList();
   }
