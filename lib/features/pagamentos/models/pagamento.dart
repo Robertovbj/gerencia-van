@@ -16,6 +16,7 @@ class Pagamento {
   final String? alunoApelido;
   final String? escolaNome;
   final String? horario;
+  final int? diaPagamento;
 
   const Pagamento({
     this.id,
@@ -31,6 +32,7 @@ class Pagamento {
     this.alunoApelido,
     this.escolaNome,
     this.horario,
+    this.diaPagamento,
   });
 
   Pagamento copyWith({
@@ -60,6 +62,7 @@ class Pagamento {
       alunoApelido: alunoApelido,
       escolaNome: escolaNome,
       horario: horario,
+      diaPagamento: diaPagamento,
     );
   }
 
@@ -93,6 +96,7 @@ class Pagamento {
         alunoApelido: map['aluno_apelido'] as String?,
         escolaNome: map['escola_nome'] as String?,
         horario: map['horario'] as String?,
+        diaPagamento: map['dia_pagamento'] as int?,
       );
 
   String get nomeExibicao =>

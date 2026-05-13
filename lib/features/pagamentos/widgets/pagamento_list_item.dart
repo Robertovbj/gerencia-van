@@ -41,7 +41,7 @@ class PagamentoListItem extends StatelessWidget {
                     '${pagamento.escolaNome ?? ''} · ${labelHorario(pagamento.horario ?? '')}',
                     style: theme.textTheme.bodySmall,
                   ),
-                  if (pagamento.dataVencimento != null)
+                  if (_dataVencimento(pagamento) case final venc?)
                     Padding(
                       padding: const EdgeInsets.only(top: 2),
                       child: Row(
@@ -50,7 +50,7 @@ class PagamentoListItem extends StatelessWidget {
                               color: theme.colorScheme.primary),
                           const SizedBox(width: 4),
                           Text(
-                            'Vencimento: ${formatarData(pagamento.dataVencimento!)}',
+                            'Vencimento: ${formatarData(venc)}',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.primary,
                               fontWeight: FontWeight.w500,
@@ -128,5 +128,18 @@ class PagamentoListItem extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  DateTime? _dataVencimento(Pagamento p) {
+    if (p.dataVencimento != null) return p.dataVencimento;
+    final dia = p.diaPagamento;
+    if (dia == null) return null;
+    final parts = p.mesReferencia.split('-');
+    if (parts.length != 2) return null;
+    final ano = int.tryParse(parts[0]);
+    final mes = int.tryParse(parts[1]);
+    if (ano == null || mes == null) return null;
+    final ultimoDia = DateTime(ano, mes + 1, 0).day;
+    return DateTime(ano, mes, dia > ultimoDia ? ultimoDia : dia);
   }
 }

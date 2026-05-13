@@ -103,12 +103,21 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
 
   Future<void> _abrirDialogDia({int? index}) async {
     final editando = index != null;
+    // Dias já usados, excluindo o que está sendo editado
+    final diasEmUso = _diasCobranca
+        .asMap()
+        .entries
+        .where((e) => e.key != index)
+        .map((e) => e.value.dia)
+        .toList();
+
     final result = await showDialog<({int dia, double valor})>(
       context: context,
       builder: (ctx) => _DiaCobrancaDialog(
-        diaInicial: editando ? _diasCobranca[index].dia : 1,
+        diaInicial: editando ? _diasCobranca[index].dia : _primeiroDiaLivre(diasEmUso),
         valorInicial: editando ? _diasCobranca[index].valor : null,
         titulo: editando ? 'Editar dia de cobrança' : 'Adicionar dia de cobrança',
+        excluirDias: diasEmUso,
       ),
     );
 
@@ -333,6 +342,13 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     );
   }
 
+  int _primeiroDiaLivre(List<int> emUso) {
+    for (int d = 1; d <= 31; d++) {
+      if (!emUso.contains(d)) return d;
+    }
+    return 1;
+  }
+
   Widget _buildFrequenciaSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -426,11 +442,13 @@ class _DiaCobrancaDialog extends StatefulWidget {
   final int diaInicial;
   final double? valorInicial;
   final String titulo;
+  final List<int> excluirDias;
 
   const _DiaCobrancaDialog({
     required this.diaInicial,
     required this.titulo,
     this.valorInicial,
+    this.excluirDias = const [],
   });
 
   @override
@@ -478,11 +496,11 @@ class _DiaCobrancaDialogState extends State<_DiaCobrancaDialog> {
               labelText: 'Dia do mês',
               border: OutlineInputBorder(),
             ),
-            items: List.generate(
-              31,
-              (i) => DropdownMenuItem(value: i + 1, child: Text('Dia ${i + 1}')),
-            ),
-            onChanged: (v) => setState(() => _dia = v ?? 1),
+            items: List.generate(31, (i) => i + 1)
+                .where((d) => !widget.excluirDias.contains(d))
+                .map((d) => DropdownMenuItem(value: d, child: Text('Dia $d')))
+                .toList(),
+            onChanged: (v) => setState(() => _dia = v ?? _dia),
           ),
           const SizedBox(height: 12),
           TextField(

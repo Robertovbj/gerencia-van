@@ -36,6 +36,7 @@ class PagamentoRepository {
              a.nome as aluno_nome,
              a.apelido as aluno_apelido,
              a.horario as horario,
+             a.dia_pagamento as dia_pagamento,
              e.nome as escola_nome
       FROM pagamentos p
       JOIN alunos a ON a.id = p.aluno_id
