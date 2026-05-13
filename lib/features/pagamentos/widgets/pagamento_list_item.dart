@@ -41,6 +41,24 @@ class PagamentoListItem extends StatelessWidget {
                     '${pagamento.escolaNome ?? ''} · ${labelHorario(pagamento.horario ?? '')}',
                     style: theme.textTheme.bodySmall,
                   ),
+                  if (pagamento.dataVencimento != null)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2),
+                      child: Row(
+                        children: [
+                          Icon(Icons.event, size: 12,
+                              color: theme.colorScheme.primary),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Vencimento: ${formatarData(pagamento.dataVencimento!)}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 4),
                   Row(
                     children: [

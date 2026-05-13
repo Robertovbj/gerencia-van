@@ -3,6 +3,9 @@ class Pagamento {
   final int alunoId;
   final int contratoId;
   final String mesReferencia;
+
+  /// Data de vencimento específica para cobranças personalizadas (nullable para mensal).
+  final DateTime? dataVencimento;
   final double valorPrevisto;
   final double? valorPago;
   final bool pago;
@@ -19,6 +22,7 @@ class Pagamento {
     required this.alunoId,
     required this.contratoId,
     required this.mesReferencia,
+    this.dataVencimento,
     required this.valorPrevisto,
     this.valorPago,
     this.pago = false,
@@ -34,6 +38,7 @@ class Pagamento {
     int? alunoId,
     int? contratoId,
     String? mesReferencia,
+    DateTime? dataVencimento,
     double? valorPrevisto,
     double? valorPago,
     bool? pago,
@@ -46,6 +51,7 @@ class Pagamento {
       alunoId: alunoId ?? this.alunoId,
       contratoId: contratoId ?? this.contratoId,
       mesReferencia: mesReferencia ?? this.mesReferencia,
+      dataVencimento: dataVencimento ?? this.dataVencimento,
       valorPrevisto: valorPrevisto ?? this.valorPrevisto,
       valorPago: clearValorPago ? null : (valorPago ?? this.valorPago),
       pago: pago ?? this.pago,
@@ -62,6 +68,7 @@ class Pagamento {
         'aluno_id': alunoId,
         'contrato_id': contratoId,
         'mes_referencia': mesReferencia,
+        'data_vencimento': dataVencimento?.toIso8601String().substring(0, 10),
         'valor_previsto': valorPrevisto,
         'valor_pago': valorPago,
         'pago': pago ? 1 : 0,
@@ -73,6 +80,9 @@ class Pagamento {
         alunoId: map['aluno_id'] as int,
         contratoId: map['contrato_id'] as int,
         mesReferencia: map['mes_referencia'] as String,
+        dataVencimento: map['data_vencimento'] != null
+            ? DateTime.parse(map['data_vencimento'] as String)
+            : null,
         valorPrevisto: (map['valor_previsto'] as num).toDouble(),
         valorPago: map['valor_pago'] != null ? (map['valor_pago'] as num).toDouble() : null,
         pago: (map['pago'] as int) == 1,

@@ -17,7 +17,7 @@ class DatabaseHelper {
     final path = join(dbPath, 'gerencia_van.db');
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
       onConfigure: (db) async => await db.execute('PRAGMA foreign_keys = ON'),
@@ -43,6 +43,7 @@ class DatabaseHelper {
         escola_id INTEGER NOT NULL,
         horario TEXT NOT NULL DEFAULT 'manha',
         dia_pagamento INTEGER NOT NULL DEFAULT 1,
+        frequencia_tipo TEXT NOT NULL DEFAULT 'mensal',
         ativo INTEGER NOT NULL DEFAULT 1,
         FOREIGN KEY (escola_id) REFERENCES escolas(id)
       )
@@ -64,6 +65,7 @@ class DatabaseHelper {
         aluno_id INTEGER NOT NULL,
         contrato_id INTEGER NOT NULL,
         mes_referencia TEXT NOT NULL,
+        data_vencimento TEXT,
         valor_previsto REAL NOT NULL,
         valor_pago REAL,
         pago INTEGER NOT NULL DEFAULT 0,
@@ -72,9 +74,35 @@ class DatabaseHelper {
         FOREIGN KEY (contrato_id) REFERENCES contratos(id)
       )
     ''');
+
+    await db.execute('''
+      CREATE TABLE frequencia_dias (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        aluno_id INTEGER NOT NULL,
+        dia INTEGER NOT NULL,
+        valor REAL NOT NULL,
+        FOREIGN KEY (aluno_id) REFERENCES alunos(id)
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // future migrations
+    if (oldVersion < 2) {
+      await db.execute(
+        "ALTER TABLE alunos ADD COLUMN frequencia_tipo TEXT NOT NULL DEFAULT 'mensal'",
+      );
+      await db.execute(
+        'ALTER TABLE pagamentos ADD COLUMN data_vencimento TEXT',
+      );
+      await db.execute('''
+        CREATE TABLE frequencia_dias (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          aluno_id INTEGER NOT NULL,
+          dia INTEGER NOT NULL,
+          valor REAL NOT NULL,
+          FOREIGN KEY (aluno_id) REFERENCES alunos(id)
+        )
+      ''');
+    }
   }
 }

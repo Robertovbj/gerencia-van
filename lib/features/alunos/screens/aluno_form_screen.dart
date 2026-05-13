@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/aluno.dart';
 import '../models/contrato.dart';
+import '../models/frequencia_dia.dart';
 import '../providers/aluno_provider.dart';
+import '../repositories/frequencia_dia_repository.dart';
 import '../../escolas/providers/escola_provider.dart';
 import '../../pagamentos/providers/pagamento_provider.dart';
 import '../../../core/utils/formatters.dart';
@@ -28,6 +30,8 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
   int? _escolaId;
   String _horario = 'manha';
   int _diaPagamento = 1;
+  String _frequenciaTipo = 'mensal';
+  final List<_DiaCobranca> _diasCobranca = [];
   bool _ativo = true;
 
   DateTime _dataInicio = DateTime.now();
@@ -49,9 +53,14 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     _escolaId = a?.escolaId;
     _horario = a?.horario ?? 'manha';
     _diaPagamento = a?.diaPagamento ?? 1;
+    _frequenciaTipo = a?.frequenciaTipo ?? 'mensal';
     _ativo = a?.ativo ?? true;
     _dataInicio = c?.dataInicio ?? DateTime.now();
     _dataFim = c?.dataFim ?? DateTime(DateTime.now().year, 12, 31);
+
+    if (a?.id != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _carregarFrequencia(a!.id!));
+    }
   }
 
   @override
@@ -61,6 +70,16 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     _responsavelCtrl.dispose();
     _valorCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _carregarFrequencia(int alunoId) async {
+    final dias = await FrequenciaDiaRepository().listarPorAluno(alunoId);
+    if (!mounted) return;
+    setState(() {
+      _diasCobranca
+        ..clear()
+        ..addAll(dias.map((d) => _DiaCobranca(dia: d.dia, valor: d.valor)));
+    });
   }
 
   Future<void> _selecionarData({required bool isInicio}) async {
@@ -82,6 +101,29 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     });
   }
 
+  Future<void> _abrirDialogDia({int? index}) async {
+    final editando = index != null;
+    final result = await showDialog<({int dia, double valor})>(
+      context: context,
+      builder: (ctx) => _DiaCobrancaDialog(
+        diaInicial: editando ? _diasCobranca[index].dia : 1,
+        valorInicial: editando ? _diasCobranca[index].valor : null,
+        titulo: editando ? 'Editar dia de cobrança' : 'Adicionar dia de cobrança',
+      ),
+    );
+
+    if (result == null) return;
+
+    setState(() {
+      if (editando) {
+        _diasCobranca[index] = _DiaCobranca(dia: result.dia, valor: result.valor);
+      } else {
+        _diasCobranca.add(_DiaCobranca(dia: result.dia, valor: result.valor));
+      }
+      _diasCobranca.sort((a, b) => a.dia.compareTo(b.dia));
+    });
+  }
+
   Future<void> _salvar() async {
     if (!_formKey.currentState!.validate()) return;
     if (_escolaId == null) {
@@ -93,6 +135,13 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     if (_dataFim.isBefore(_dataInicio)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Data fim deve ser após data início')),
+      );
+      return;
+    }
+    if (_frequenciaTipo == 'personalizada' && _diasCobranca.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Adicione ao menos um dia de cobrança personalizado')),
       );
       return;
     }
@@ -111,6 +160,7 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
       escolaId: _escolaId!,
       horario: _horario,
       diaPagamento: _diaPagamento,
+      frequenciaTipo: _frequenciaTipo,
       ativo: _ativo,
     );
 
@@ -121,7 +171,13 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
       dataFim: _dataFim,
     );
 
-    await context.read<AlunoProvider>().salvar(aluno: aluno, contrato: contrato);
+    final frequenciaDias = _diasCobranca
+        .map((d) => FrequenciaDia(alunoId: aluno.id ?? 0, dia: d.dia, valor: d.valor))
+        .toList();
+
+    await context
+        .read<AlunoProvider>()
+        .salvar(aluno: aluno, contrato: contrato, frequenciaDias: frequenciaDias);
     if (mounted) context.read<PagamentoProvider>().carregar();
 
     if (mounted) Navigator.of(context).pop();
@@ -222,18 +278,21 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
               onChanged: (v) => setState(() => _horario = v ?? 'manha'),
             ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<int>(
-              initialValue: _diaPagamento,
-              decoration: const InputDecoration(
-                labelText: 'Dia do pagamento',
-                border: OutlineInputBorder(),
+            if (_frequenciaTipo == 'mensal')
+              DropdownButtonFormField<int>(
+                initialValue: _diaPagamento,
+                decoration: const InputDecoration(
+                  labelText: 'Dia do pagamento',
+                  border: OutlineInputBorder(),
+                ),
+                items: List.generate(
+                  31,
+                  (i) => DropdownMenuItem(value: i + 1, child: Text('Dia ${i + 1}')),
+                ),
+                onChanged: (v) => setState(() => _diaPagamento = v ?? 1),
               ),
-              items: List.generate(
-                31,
-                (i) => DropdownMenuItem(value: i + 1, child: Text('Dia ${i + 1}')),
-              ),
-              onChanged: (v) => setState(() => _diaPagamento = v ?? 1),
-            ),
+            const SizedBox(height: 12),
+            _buildFrequenciaSection(),
             const SizedBox(height: 12),
             SwitchListTile(
               title: const Text('Aluno ativo'),
@@ -274,6 +333,80 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     );
   }
 
+  Widget _buildFrequenciaSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _secao('Frequência de cobrança'),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          segments: const [
+            ButtonSegment(
+              value: 'mensal',
+              label: Text('Mensal'),
+              icon: Icon(Icons.calendar_month),
+            ),
+            ButtonSegment(
+              value: 'personalizada',
+              label: Text('Personalizada'),
+              icon: Icon(Icons.tune),
+            ),
+          ],
+          selected: {_frequenciaTipo},
+          onSelectionChanged: (s) =>
+              setState(() => _frequenciaTipo = s.first),
+          showSelectedIcon: false,
+        ),
+        if (_frequenciaTipo == 'personalizada') ...[
+          const SizedBox(height: 12),
+          if (_diasCobranca.isEmpty)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Nenhum dia configurado. Adicione ao menos um dia de cobrança.',
+                style: TextStyle(color: Colors.grey),
+              ),
+            )
+          else
+            ...List.generate(_diasCobranca.length, (i) {
+              final d = _diasCobranca[i];
+              return Card(
+                margin: const EdgeInsets.only(bottom: 6),
+                child: ListTile(
+                  leading: CircleAvatar(
+                    child: Text('${d.dia}',
+                        style: const TextStyle(fontSize: 13)),
+                  ),
+                  title: Text('Dia ${d.dia}'),
+                  subtitle: Text(formatarMoeda(d.valor)),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit, size: 20),
+                        onPressed: () => _abrirDialogDia(index: i),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        color: Colors.red,
+                        onPressed: () =>
+                            setState(() => _diasCobranca.removeAt(i)),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          OutlinedButton.icon(
+            onPressed: () => _abrirDialogDia(),
+            icon: const Icon(Icons.add),
+            label: const Text('Adicionar dia de cobrança'),
+          ),
+        ],
+      ],
+    );
+  }
+
   Widget _secao(String titulo) => Text(
         titulo,
         style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -281,4 +414,100 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
               fontWeight: FontWeight.bold,
             ),
       );
+}
+
+class _DiaCobranca {
+  int dia;
+  double valor;
+  _DiaCobranca({required this.dia, required this.valor});
+}
+
+class _DiaCobrancaDialog extends StatefulWidget {
+  final int diaInicial;
+  final double? valorInicial;
+  final String titulo;
+
+  const _DiaCobrancaDialog({
+    required this.diaInicial,
+    required this.titulo,
+    this.valorInicial,
+  });
+
+  @override
+  State<_DiaCobrancaDialog> createState() => _DiaCobrancaDialogState();
+}
+
+class _DiaCobrancaDialogState extends State<_DiaCobrancaDialog> {
+  late int _dia;
+  late final TextEditingController _valorCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _dia = widget.diaInicial;
+    _valorCtrl = TextEditingController(
+      text: widget.valorInicial != null
+          ? widget.valorInicial!.toStringAsFixed(2).replaceAll('.', ',')
+          : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    _valorCtrl.dispose();
+    super.dispose();
+  }
+
+  void _confirmar() {
+    final v = double.tryParse(
+        _valorCtrl.text.replaceAll('.', '').replaceAll(',', '.'));
+    if (v == null || v <= 0) return;
+    Navigator.of(context).pop((dia: _dia, valor: v));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text(widget.titulo),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DropdownButtonFormField<int>(
+            value: _dia,
+            decoration: const InputDecoration(
+              labelText: 'Dia do mês',
+              border: OutlineInputBorder(),
+            ),
+            items: List.generate(
+              31,
+              (i) => DropdownMenuItem(value: i + 1, child: Text('Dia ${i + 1}')),
+            ),
+            onChanged: (v) => setState(() => _dia = v ?? 1),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _valorCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Valor (R\$)',
+              prefixText: 'R\$ ',
+              border: OutlineInputBorder(),
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            autofocus: widget.valorInicial == null,
+            onSubmitted: (_) => _confirmar(),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancelar'),
+        ),
+        ElevatedButton(
+          onPressed: _confirmar,
+          child: const Text('Salvar'),
+        ),
+      ],
+    );
+  }
 }

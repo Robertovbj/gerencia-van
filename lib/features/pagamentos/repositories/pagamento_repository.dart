@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import '../../../core/database/database_helper.dart';
 import '../models/pagamento.dart';
+import '../../alunos/models/frequencia_dia.dart';
 
 class PagamentoRepository {
   Future<Database> get _db async => DatabaseHelper.instance.database;
@@ -69,6 +70,8 @@ class PagamentoRepository {
     required DateTime dataInicio,
     required DateTime dataFim,
     required double valorMensalidade,
+    String frequenciaTipo = 'mensal',
+    List<FrequenciaDia> frequenciaDias = const [],
   }) async {
     final db = await _db;
     final batch = db.batch();
@@ -80,20 +83,51 @@ class PagamentoRepository {
       final mesRef =
           '${current.year}-${current.month.toString().padLeft(2, '0')}';
 
-      final existing = await db.query(
-        'pagamentos',
-        where: 'aluno_id = ? AND contrato_id = ? AND mes_referencia = ?',
-        whereArgs: [alunoId, contratoId, mesRef],
-      );
+      if (frequenciaTipo == 'personalizada' && frequenciaDias.isNotEmpty) {
+        for (final fd in frequenciaDias) {
+          // Clamp ao último dia do mês
+          final ultimoDia = DateTime(current.year, current.month + 1, 0).day;
+          final diaReal = fd.dia > ultimoDia ? ultimoDia : fd.dia;
+          final dataVenc =
+              '$mesRef-${diaReal.toString().padLeft(2, '0')}';
 
-      if (existing.isEmpty) {
-        batch.insert('pagamentos', {
-          'aluno_id': alunoId,
-          'contrato_id': contratoId,
-          'mes_referencia': mesRef,
-          'valor_previsto': valorMensalidade,
-          'pago': 0,
-        });
+          final existing = await db.query(
+            'pagamentos',
+            where:
+                'aluno_id = ? AND contrato_id = ? AND mes_referencia = ? AND data_vencimento = ?',
+            whereArgs: [alunoId, contratoId, mesRef, dataVenc],
+          );
+
+          if (existing.isEmpty) {
+            batch.insert('pagamentos', {
+              'aluno_id': alunoId,
+              'contrato_id': contratoId,
+              'mes_referencia': mesRef,
+              'data_vencimento': dataVenc,
+              'valor_previsto': fd.valor,
+              'pago': 0,
+            });
+          }
+        }
+      } else {
+        // Frequência mensal padrão
+        final existing = await db.query(
+          'pagamentos',
+          where:
+              'aluno_id = ? AND contrato_id = ? AND mes_referencia = ? AND data_vencimento IS NULL',
+          whereArgs: [alunoId, contratoId, mesRef],
+        );
+
+        if (existing.isEmpty) {
+          batch.insert('pagamentos', {
+            'aluno_id': alunoId,
+            'contrato_id': contratoId,
+            'mes_referencia': mesRef,
+            'data_vencimento': null,
+            'valor_previsto': valorMensalidade,
+            'pago': 0,
+          });
+        }
       }
 
       final nextMonth = current.month == 12 ? 1 : current.month + 1;
@@ -102,6 +136,17 @@ class PagamentoRepository {
     }
 
     await batch.commit(noResult: true);
+  }
+
+  /// Remove todos os pagamentos não pagos do contrato (usado ao regenerar
+  /// após edição de aluno).
+  Future<void> deleteUnpaidByContrato(int contratoId) async {
+    final db = await _db;
+    await db.delete(
+      'pagamentos',
+      where: 'contrato_id = ? AND pago = 0',
+      whereArgs: [contratoId],
+    );
   }
 
   Future<int> marcarComoPago({

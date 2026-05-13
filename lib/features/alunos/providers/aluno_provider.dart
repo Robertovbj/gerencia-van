@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../models/aluno.dart';
 import '../models/contrato.dart';
+import '../models/frequencia_dia.dart';
 import '../repositories/aluno_repository.dart';
 import '../repositories/contrato_repository.dart';
+import '../repositories/frequencia_dia_repository.dart';
 import '../../../core/services/sync_service.dart';
 import '../../pagamentos/repositories/pagamento_repository.dart';
 
@@ -10,6 +12,7 @@ class AlunoProvider extends ChangeNotifier {
   final _alunoRepo = AlunoRepository();
   final _contratoRepo = ContratoRepository();
   final _pagamentoRepo = PagamentoRepository();
+  final _frequenciaRepo = FrequenciaDiaRepository();
 
   List<Aluno> _alunos = [];
   List<Aluno> get alunos => _alunos;
@@ -37,6 +40,7 @@ class AlunoProvider extends ChangeNotifier {
   Future<void> salvar({
     required Aluno aluno,
     required Contrato contrato,
+    List<FrequenciaDia> frequenciaDias = const [],
   }) async {
     int alunoId;
     if (aluno.id == null) {
@@ -46,6 +50,13 @@ class AlunoProvider extends ChangeNotifier {
       await _alunoRepo.atualizar(aluno);
     }
 
+    // Persiste os dias de cobrança personalizada
+    if (aluno.frequenciaTipo == 'personalizada') {
+      await _frequenciaRepo.salvarTodos(alunoId, frequenciaDias);
+    } else {
+      await _frequenciaRepo.excluirPorAluno(alunoId);
+    }
+
     final contratoComAluno = contrato.copyWith(alunoId: alunoId);
     int contratoId;
     if (contrato.id == null) {
@@ -53,6 +64,8 @@ class AlunoProvider extends ChangeNotifier {
     } else {
       contratoId = contrato.id!;
       await _contratoRepo.atualizar(contratoComAluno);
+      // Regenera pagamentos não pagos com a configuração atual
+      await _pagamentoRepo.deleteUnpaidByContrato(contratoId);
     }
 
     await _pagamentoRepo.gerarPagamentosContrato(
@@ -61,6 +74,8 @@ class AlunoProvider extends ChangeNotifier {
       dataInicio: contrato.dataInicio,
       dataFim: contrato.dataFim,
       valorMensalidade: aluno.valorMensalidade,
+      frequenciaTipo: aluno.frequenciaTipo,
+      frequenciaDias: frequenciaDias,
     );
 
     await carregar();
@@ -76,6 +91,8 @@ class AlunoProvider extends ChangeNotifier {
     required double valorMensalidade,
     required Contrato contrato,
   }) async {
+    final aluno = _alunos.firstWhere((a) => a.id == alunoId);
+    final frequenciaDias = await _frequenciaRepo.listarPorAluno(alunoId);
     final contratoComAluno = contrato.copyWith(alunoId: alunoId);
     final contratoId = await _contratoRepo.inserir(contratoComAluno);
     await _pagamentoRepo.gerarPagamentosContrato(
@@ -84,6 +101,8 @@ class AlunoProvider extends ChangeNotifier {
       dataInicio: contrato.dataInicio,
       dataFim: contrato.dataFim,
       valorMensalidade: valorMensalidade,
+      frequenciaTipo: aluno.frequenciaTipo,
+      frequenciaDias: frequenciaDias,
     );
     await carregar();
     SyncService.instance.scheduleSync();
@@ -132,6 +151,7 @@ class AlunoProvider extends ChangeNotifier {
 
       // Só adiciona se o início ajustado ainda for antes do fim
       if (!inicio.isAfter(dataFim)) {
+        final frequenciaDias = await _frequenciaRepo.listarPorAluno(alunoId);
         final contratoId = await _contratoRepo.inserir(
           Contrato(alunoId: alunoId, dataInicio: inicio, dataFim: dataFim),
         );
@@ -141,6 +161,8 @@ class AlunoProvider extends ChangeNotifier {
           dataInicio: inicio,
           dataFim: dataFim,
           valorMensalidade: aluno.valorMensalidade,
+          frequenciaTipo: aluno.frequenciaTipo,
+          frequenciaDias: frequenciaDias,
         );
       }
     }

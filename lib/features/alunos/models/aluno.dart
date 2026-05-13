@@ -7,6 +7,9 @@ class Aluno {
   final int escolaId;
   final String horario;
   final int diaPagamento;
+
+  /// 'mensal' (padrão) ou 'personalizada'
+  final String frequenciaTipo;
   final bool ativo;
 
   // join field
@@ -21,6 +24,7 @@ class Aluno {
     required this.escolaId,
     this.horario = 'manha',
     this.diaPagamento = 1,
+    this.frequenciaTipo = 'mensal',
     this.ativo = true,
     this.escolaNome,
   });
@@ -34,6 +38,7 @@ class Aluno {
     int? escolaId,
     String? horario,
     int? diaPagamento,
+    String? frequenciaTipo,
     bool? ativo,
     String? escolaNome,
   }) {
@@ -46,6 +51,7 @@ class Aluno {
       escolaId: escolaId ?? this.escolaId,
       horario: horario ?? this.horario,
       diaPagamento: diaPagamento ?? this.diaPagamento,
+      frequenciaTipo: frequenciaTipo ?? this.frequenciaTipo,
       ativo: ativo ?? this.ativo,
       escolaNome: escolaNome ?? this.escolaNome,
     );
@@ -60,6 +66,7 @@ class Aluno {
         'escola_id': escolaId,
         'horario': horario,
         'dia_pagamento': diaPagamento,
+        'frequencia_tipo': frequenciaTipo,
         'ativo': ativo ? 1 : 0,
       };
 
@@ -72,6 +79,7 @@ class Aluno {
         escolaId: map['escola_id'] as int,
         horario: map['horario'] as String? ?? 'manha',
         diaPagamento: map['dia_pagamento'] as int? ?? 1,
+        frequenciaTipo: map['frequencia_tipo'] as String? ?? 'mensal',
         ativo: (map['ativo'] as int) == 1,
         escolaNome: map['escola_nome'] as String?,
       );
