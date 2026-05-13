@@ -18,24 +18,28 @@ class BackupService {
     final alunos = await db.query('alunos');
     final contratos = await db.query('contratos');
     final pagamentos = await db.query('pagamentos');
+    final frequenciaDias = await db.query('frequencia_dias');
 
     return {
-      'versao': 1,
+      'versao': 2,
       'exportadoEm': (asOf ?? DateTime.now()).toIso8601String(),
       'escolas': escolas,
       'alunos': alunos,
       'contratos': contratos,
       'pagamentos': pagamentos,
+      'frequencia_dias': frequenciaDias,
     };
   }
 
   /// Aplica os dados do mapa ao banco.
   /// Retorna null em caso de sucesso ou uma mensagem de erro.
   Future<String?> importarDados(Map<String, dynamic> data) async {
-    if (data['versao'] != 1) return 'Versão de backup incompatível.';
+    final versao = data['versao'] as int? ?? 1;
+    if (versao < 1 || versao > 2) return 'Versão de backup incompatível.';
 
     final db = await DatabaseHelper.instance.database;
     await db.transaction((txn) async {
+      await txn.delete('frequencia_dias');
       await txn.delete('pagamentos');
       await txn.delete('contratos');
       await txn.delete('alunos');
@@ -52,6 +56,12 @@ class BackupService {
       }
       for (final row in (data['pagamentos'] as List)) {
         await txn.insert('pagamentos', Map<String, dynamic>.from(row as Map));
+      }
+      // Versão 2+: frequência de dias personalizada
+      if (versao >= 2 && data['frequencia_dias'] != null) {
+        for (final row in (data['frequencia_dias'] as List)) {
+          await txn.insert('frequencia_dias', Map<String, dynamic>.from(row as Map));
+        }
       }
     });
 
