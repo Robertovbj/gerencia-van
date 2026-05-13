@@ -3,11 +3,45 @@ import '../models/pagamento.dart';
 import '../repositories/pagamento_repository.dart';
 import '../../../core/services/sync_service.dart';
 
+enum OrdenacaoPagamento { nome, dataVencimento, valor }
+
 class PagamentoProvider extends ChangeNotifier {
   final _repo = PagamentoRepository();
 
   List<Pagamento> _pagamentos = [];
-  List<Pagamento> get pagamentos => _pagamentos;
+  List<Pagamento> get pagamentos => _pagamentosOrdenados();
+
+  OrdenacaoPagamento _ordenacao = OrdenacaoPagamento.nome;
+  OrdenacaoPagamento get ordenacao => _ordenacao;
+
+  void setOrdenacao(OrdenacaoPagamento ordenacao) {
+    _ordenacao = ordenacao;
+    notifyListeners();
+  }
+
+  List<Pagamento> _pagamentosOrdenados() {
+    final lista = List<Pagamento>.from(_pagamentos);
+    switch (_ordenacao) {
+      case OrdenacaoPagamento.nome:
+        lista.sort((a, b) =>
+            (a.alunoNome ?? '').toLowerCase().compareTo((b.alunoNome ?? '').toLowerCase()));
+      case OrdenacaoPagamento.dataVencimento:
+        lista.sort((a, b) => _dataVencPagamento(a).compareTo(_dataVencPagamento(b)));
+      case OrdenacaoPagamento.valor:
+        lista.sort((a, b) => a.valorPrevisto.compareTo(b.valorPrevisto));
+    }
+    return lista;
+  }
+
+  DateTime _dataVencPagamento(Pagamento p) {
+    if (p.dataVencimento != null) return p.dataVencimento!;
+    final parts = p.mesReferencia.split('-');
+    final year = int.parse(parts[0]);
+    final month = int.parse(parts[1]);
+    final dia = p.diaPagamento ?? 1;
+    final ultimoDia = DateUtils.getDaysInMonth(year, month);
+    return DateTime(year, month, dia.clamp(1, ultimoDia));
+  }
 
   DateTime _mesSelecionado = DateTime(DateTime.now().year, DateTime.now().month);
   DateTime get mesSelecionado => _mesSelecionado;

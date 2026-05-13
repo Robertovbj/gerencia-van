@@ -7,6 +7,12 @@ import '../../escolas/providers/escola_provider.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../shared/widgets/main_scaffold_key.dart';
 
+const _labelOrdenacao = {
+  OrdenacaoPagamento.nome: 'Nome',
+  OrdenacaoPagamento.dataVencimento: 'Data de vencimento',
+  OrdenacaoPagamento.valor: 'Valor',
+};
+
 class PagamentosScreen extends StatefulWidget {
   const PagamentosScreen({super.key});
 
@@ -91,6 +97,32 @@ class _PagamentosScreenState extends State<PagamentosScreen> {
           icon: const Icon(Icons.menu),
           onPressed: () => MainScaffoldKey.of(context)?.currentState?.openDrawer(),
         ),
+        actions: [
+          Consumer<PagamentoProvider>(
+            builder: (context, provider, _) => PopupMenuButton<OrdenacaoPagamento>(
+              icon: const Icon(Icons.sort),
+              tooltip: 'Ordenar por',
+              onSelected: (v) => context.read<PagamentoProvider>().setOrdenacao(v),
+              itemBuilder: (_) => OrdenacaoPagamento.values
+                  .map(
+                    (op) => PopupMenuItem(
+                      value: op,
+                      child: Row(
+                        children: [
+                          if (provider.ordenacao == op)
+                            const Icon(Icons.check, size: 18)
+                          else
+                            const SizedBox(width: 18),
+                          const SizedBox(width: 8),
+                          Text(_labelOrdenacao[op]!),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ],
       ),
       body: Column(
         children: [
