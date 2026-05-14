@@ -83,33 +83,36 @@ class SincroniaScreen extends StatelessWidget {
                           ),
                         ],
                         const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            FilledButton.icon(
-                              onPressed: sync.status == SyncStatus.syncing
-                                  ? null
-                                  : () => sync.syncNow(),
-                              icon: sync.status == SyncStatus.syncing
-                                  ? const SizedBox(
-                                      width: 16,
-                                      height: 16,
-                                      child: CircularProgressIndicator(
-                                          strokeWidth: 2),
-                                    )
-                                  : const Icon(Icons.sync),
-                              label: Text(
-                                sync.status == SyncStatus.syncing
-                                    ? 'Sincronizando…'
-                                    : 'Sincronizar agora',
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                            children: [
+                              FilledButton.icon(
+                                onPressed: sync.status == SyncStatus.syncing
+                                    ? null
+                                    : () => sync.syncNow(),
+                                icon: sync.status == SyncStatus.syncing
+                                    ? const SizedBox(
+                                        width: 16,
+                                        height: 16,
+                                        child: CircularProgressIndicator(
+                                            strokeWidth: 2),
+                                      )
+                                    : const Icon(Icons.sync),
+                                label: Text(
+                                  sync.status == SyncStatus.syncing
+                                      ? 'Sincronizando…'
+                                      : 'Sincronizar agora',
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: 8),
-                            OutlinedButton.icon(
-                              onPressed: () => sync.signOut(),
-                              icon: const Icon(Icons.logout),
-                              label: const Text('Desconectar'),
-                            ),
-                          ],
+                              const SizedBox(width: 8),
+                              OutlinedButton.icon(
+                                onPressed: () => sync.signOut(),
+                                icon: const Icon(Icons.logout),
+                                label: const Text('Desconectar'),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ],
@@ -141,24 +144,23 @@ class SincroniaScreen extends StatelessWidget {
                         style: TextStyle(fontSize: 13),
                       ),
                       const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: OutlinedButton.icon(
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: Row(
+                          children: [
+                            OutlinedButton.icon(
                               onPressed: () => _exportar(context),
                               icon: const Icon(Icons.upload_file),
                               label: const Text('Exportar JSON'),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: OutlinedButton.icon(
+                            const SizedBox(width: 8),
+                            OutlinedButton.icon(
                               onPressed: () => _importar(context),
                               icon: const Icon(Icons.download),
                               label: const Text('Importar JSON'),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
