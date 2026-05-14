@@ -20,7 +20,12 @@ class PagamentoProvider extends ChangeNotifier {
   }
 
   List<Pagamento> _pagamentosOrdenados() {
-    final lista = List<Pagamento>.from(_pagamentos);
+    var lista = List<Pagamento>.from(_pagamentos);
+    if (_statusFiltro == 'pago') {
+      lista = lista.where((p) => p.pago).toList();
+    } else if (_statusFiltro == 'pendente') {
+      lista = lista.where((p) => !p.pago).toList();
+    }
     switch (_ordenacao) {
       case OrdenacaoPagamento.nome:
         lista.sort((a, b) =>
@@ -52,6 +57,15 @@ class PagamentoProvider extends ChangeNotifier {
   String? _horarioFiltro;
   String? get horarioFiltro => _horarioFiltro;
 
+  String? _statusFiltro;
+  String? get statusFiltro => _statusFiltro;
+
+  bool get temFiltrosAtivos =>
+      _escolaFiltro != null ||
+      (_horarioFiltro != null && _horarioFiltro!.isNotEmpty) ||
+      _busca.isNotEmpty ||
+      _statusFiltro != null;
+
   String _busca = '';
   String get busca => _busca;
 
@@ -76,6 +90,11 @@ class PagamentoProvider extends ChangeNotifier {
   void setBusca(String valor) {
     _busca = valor;
     carregar();
+  }
+
+  void setStatusFiltro(String? status) {
+    _statusFiltro = status;
+    notifyListeners();
   }
 
   String get _mesRef {
