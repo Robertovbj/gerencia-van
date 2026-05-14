@@ -223,7 +223,10 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
       setState(() => _salvando = true);
       try {
         await context.read<AlunoProvider>().excluirAluno(widget.aluno!.id!);
-        if (mounted) Navigator.of(context).pop();
+        if (mounted) {
+          context.read<PagamentoProvider>().carregar();
+          Navigator.of(context).pop('deleted');
+        }
       } finally {
         if (mounted) setState(() => _salvando = false);
       }

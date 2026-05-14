@@ -119,9 +119,14 @@ class _AlunoDetailScreenState extends State<AlunoDetailScreen> {
             icon: const Icon(Icons.edit),
             onPressed: () async {
               final contrato = _contratos.isNotEmpty ? _contratos.first : null;
-              await Navigator.of(context).push(MaterialPageRoute(
+              final result = await Navigator.of(context).push(MaterialPageRoute(
                 builder: (_) => AlunoFormScreen(aluno: aluno, contrato: contrato),
               ));
+              if (!context.mounted) return;
+              if (result == 'deleted') {
+                Navigator.of(context).pop();
+                return;
+              }
               await _carregarContratos();
             },
           ),
