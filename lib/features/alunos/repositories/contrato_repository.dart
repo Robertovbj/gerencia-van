@@ -92,4 +92,21 @@ class ContratoRepository {
       }
     });
   }
+
+  /// Exclui todos os contratos e pagamentos de um aluno (sem preservação de histórico).
+  Future<void> excluirTodosPorAluno(int alunoId) async {
+    final db = await _db;
+    await db.transaction((txn) async {
+      final contratos = await txn.query(
+        'contratos',
+        columns: ['id'],
+        where: 'aluno_id = ?',
+        whereArgs: [alunoId],
+      );
+      for (final c in contratos) {
+        await txn.delete('pagamentos', where: 'contrato_id = ?', whereArgs: [c['id']]);
+      }
+      await txn.delete('contratos', where: 'aluno_id = ?', whereArgs: [alunoId]);
+    });
+  }
 }

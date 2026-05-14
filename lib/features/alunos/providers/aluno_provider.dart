@@ -114,6 +114,14 @@ class AlunoProvider extends ChangeNotifier {
     SyncService.instance.scheduleSync();
   }
 
+  Future<void> excluirAluno(int alunoId) async {
+    await _frequenciaRepo.excluirPorAluno(alunoId);
+    await _contratoRepo.excluirTodosPorAluno(alunoId);
+    await _alunoRepo.excluir(alunoId);
+    await carregar();
+    SyncService.instance.scheduleSync();
+  }
+
   /// Para cada aluno em [alunoIds], adiciona um contrato de [dataInicio] a [dataFim].
   /// Se o aluno já tiver um contrato cujo fim seja >= dataInicio, o início
   /// desse novo contrato é adiado para o primeiro dia do mês seguinte ao fim

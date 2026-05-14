@@ -192,6 +192,44 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  Future<void> _confirmarExclusao(BuildContext context) async {
+    final nome = widget.aluno!.nome;
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Excluir Aluno'),
+        content: Text(
+          'Tem certeza que deseja excluir "$nome"?\n\n'
+          'Todos os contratos e pagamentos vinculados a este aluno também serão removidos permanentemente.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(ctx).colorScheme.error,
+              foregroundColor: Theme.of(ctx).colorScheme.onError,
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Excluir'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true && mounted) {
+      setState(() => _salvando = true);
+      try {
+        await context.read<AlunoProvider>().excluirAluno(widget.aluno!.id!);
+        if (mounted) Navigator.of(context).pop();
+      } finally {
+        if (mounted) setState(() => _salvando = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final escolas = context.watch<EscolaProvider>().escolasAtivas;
@@ -200,6 +238,12 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
       appBar: AppBar(
         title: Text(widget.aluno == null ? 'Novo Aluno' : 'Editar Aluno'),
         actions: [
+          if (widget.aluno != null)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Excluir aluno',
+              onPressed: _salvando ? null : () => _confirmarExclusao(context),
+            ),
           TextButton(
             onPressed: _salvando ? null : _salvar,
             child: _salvando

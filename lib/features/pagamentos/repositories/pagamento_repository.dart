@@ -139,6 +139,12 @@ class PagamentoRepository {
     await batch.commit(noResult: true);
   }
 
+  /// Remove todos os pagamentos de um aluno (usado na exclusão do aluno).
+  Future<void> excluirPorAluno(int alunoId) async {
+    final db = await _db;
+    await db.delete('pagamentos', where: 'aluno_id = ?', whereArgs: [alunoId]);
+  }
+
   /// Remove todos os pagamentos não pagos do contrato (usado ao regenerar
   /// após edição de aluno).
   Future<void> deleteUnpaidByContrato(int contratoId) async {
