@@ -491,7 +491,7 @@ class _DiaCobrancaDialogState extends State<_DiaCobrancaDialog> {
         mainAxisSize: MainAxisSize.min,
         children: [
           DropdownButtonFormField<int>(
-            value: _dia,
+            initialValue: _dia,
             decoration: const InputDecoration(
               labelText: 'Dia do mês',
               border: OutlineInputBorder(),
