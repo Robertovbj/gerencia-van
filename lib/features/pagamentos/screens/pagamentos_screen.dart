@@ -94,7 +94,7 @@ class _PagamentosScreenState extends State<PagamentosScreen> {
             .animate(CurvedAnimation(parent: anim, curve: Curves.easeOut)),
         child: child,
       ),
-      pageBuilder: (ctx, _, __) => _FiltrosPanel(escolas: escolas),
+      pageBuilder: (ctx, _, _) => _FiltrosPanel(escolas: escolas),
     );
   }
 

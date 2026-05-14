@@ -188,6 +188,7 @@ class _AlunoDetailScreenState extends State<AlunoDetailScreen> {
                           ),
                         );
                         if (confirmar == true) {
+                          if (!context.mounted) return;
                           await context.read<AlunoProvider>().excluirContrato(c.id!);
                           await _carregarContratos();
                         }

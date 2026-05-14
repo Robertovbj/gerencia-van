@@ -194,6 +194,10 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
 
   Future<void> _confirmarExclusao(BuildContext context) async {
     final nome = widget.aluno!.nome;
+    final alunoProvider = context.read<AlunoProvider>();
+    final pagamentoProvider = context.read<PagamentoProvider>();
+    final navigator = Navigator.of(context);
+
     final confirm = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -222,10 +226,10 @@ class _AlunoFormScreenState extends State<AlunoFormScreen> {
     if (confirm == true && mounted) {
       setState(() => _salvando = true);
       try {
-        await context.read<AlunoProvider>().excluirAluno(widget.aluno!.id!);
+        await alunoProvider.excluirAluno(widget.aluno!.id!);
         if (mounted) {
-          context.read<PagamentoProvider>().carregar();
-          Navigator.of(context).pop('deleted');
+          pagamentoProvider.carregar();
+          navigator.pop('deleted');
         }
       } finally {
         if (mounted) setState(() => _salvando = false);
